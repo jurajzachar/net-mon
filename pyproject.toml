@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "net-mon"
+version = "0.1.0"
+description = "Network monitoring tool with InfluxDB as backend"
+authors = ["Juraj Zachar"]
+license = "GNU GPL"
+packages = [
+    { include = "net_mon" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+pydantic = "*"
+influxdb-client = "*"
+python-dotenv = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8"
+testcontainers = {version=">=4", extras=["influxdb"]}
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
