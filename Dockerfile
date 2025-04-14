@@ -7,6 +7,9 @@ ENV PYTHONUNBUFFERED=1
 # Set the working directory
 WORKDIR /app
 
+# Install curl
+RUN apt-get update && apt-get install -y curl && apt-get clean
+
 # Copy the dependency files
 COPY requirements.txt /app/
 
