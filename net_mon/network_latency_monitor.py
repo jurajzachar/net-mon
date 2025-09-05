@@ -2,7 +2,6 @@ import queue
 import threading
 import time
 import socket
-from typing import Any
 
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
