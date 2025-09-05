@@ -4,6 +4,7 @@ TAG = latest
 
 # Target to export dependencies and build the Docker image
 build:
+	poetry self add poetry-plugin-export
 	poetry export --without-hashes --output requirements.txt
 	docker build -t $(IMAGE_NAME):$(TAG) .
 
