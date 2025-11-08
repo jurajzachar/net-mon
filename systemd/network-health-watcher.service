@@ -1,0 +1,6 @@
+[Unit]
+Description=Check network health and reboot if offline too long
+
+[Service]
+Type=oneshot
+ExecStart=/opt/local/bin/network-health-watcher.sh

@@ -13,6 +13,8 @@ python = ">=3.12,<3.13"
 pydantic = "*"
 influxdb-client = "*"
 python-dotenv = "*"
+fastapi = "*"
+uvicorn = "*"
 
 [tool.poetry.group.dev.dependencies]
 poetry-core = ">=1.0.0"

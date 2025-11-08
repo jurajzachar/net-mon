@@ -14,6 +14,7 @@ from urllib3.exceptions import NewConnectionError
 # Load environment variables (optional, use .env for credentials)
 load_dotenv()
 
+
 class NetworkLatencyMonitor:
     def __init__(self,
                  influxdb_url: str,
@@ -49,6 +50,12 @@ class NetworkLatencyMonitor:
         # Queue to hold exceptions
         self.exception_queue = queue.Queue()
 
+        # Internet connection status
+        self.lock = threading.Lock()
+        self.currently_connected = True
+        self.last_success_time = time.time()
+        self.last_check_time = time.time()
+
     @classmethod
     def from_env(cls):
         """Secondary constructor that initializes the class using environment variables."""
@@ -79,17 +86,19 @@ class NetworkLatencyMonitor:
     def _measure_latency(self):
         """Measures connection latency to the target host."""
         try:
-            start_time = time.time()
-
-            # Create a socket and measure handshake time
+            start = time.time()
             with socket.create_connection((self.TARGET_HOST, self.TARGET_PORT), timeout=5):
-                latency = (time.time() - start_time) * 1000  # Convert to milliseconds
-
+                latency = (time.time() - start) * 1000
+            with self.lock:
+                self.currently_connected = True
+                self.last_success_time = time.time()
+                self.last_check_time = time.time()
             logging.info(f"{self.TARGET_HOST}:{self.TARGET_PORT} - latency: {latency:.2f} ms")
             return latency, True
-
         except (socket.timeout, socket.error, NewConnectionError) as e:
-            logging.error(f"{self.TARGET_HOST}:{self.TARGET_PORT} - Connection failed, reason: {e.args}")
+            with self.lock:
+                self.currently_connected = False
+                self.last_check_time = time.time()
             self.exception_queue.put(e)
             return None, False
 
@@ -122,11 +131,22 @@ class NetworkLatencyMonitor:
             # let the process crash
             self.exception_queue.put(e)
 
+    def get_status(self):
+        with self.lock:
+            now = time.time()
+            downtime = 0 if self.currently_connected else now - self.last_success_time
+            return {
+                "connected": self.currently_connected,
+                "last_success": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.last_success_time)),
+                "downtime_seconds": round(downtime, 1)
+            }
+
     def stop(self):
         self.stop_flag.set()
 
     def run(self):
-        logging.info(f"Starting network latency monitor for {self.TARGET_HOST}:{self.TARGET_PORT} (interval: {self.INTERVAL}s)")
+        logging.info(
+            f"Starting network latency monitor for {self.TARGET_HOST}:{self.TARGET_PORT} (interval: {self.INTERVAL}s)")
 
         while not self.stop_flag.is_set():
             latency, success = self._measure_latency()
